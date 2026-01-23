@@ -1256,6 +1256,16 @@ function selectSite(siteName, skipAnimation = false) {
     siteTitle.textContent = `${currentSite.name} - IT Management Interface`;
     networkDiagramUrl.textContent = currentSite.networkDiagram;
 
+    // Show/Hide Name List button for HLS site
+    const nameListBtn = document.getElementById('nameListBtn');
+    if (nameListBtn) {
+        if (currentSite.name === 'HLS') {
+            nameListBtn.style.display = 'inline-flex';
+        } else {
+            nameListBtn.style.display = 'none';
+        }
+    }
+
     updateDepartmentDropdowns();
     updateTechnicianDropdowns();
 
