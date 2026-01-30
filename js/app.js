@@ -58,7 +58,7 @@ const siteConfig = {
         fullName: "Hiru Live Streaming",
         icon: "fas fa-city",
         technicians: ["Navendra"],
-        departments: ["Production", "PCR", "Engineering", "Camera", "Library", "Maintenance"],
+        departments: ["Programming", "Camera", "Managers", "Edit", "Graphic", "Secatry", "Dubbing", "Engineering", "IT", "HR"],
         networkDiagram: "https://www.canva.com/design/DAG-e1F-ViA/nsJaRxmGmBmsY19qmF0SCg/view?utm_content=DAG-e1F-ViA&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h89c18793db",
         firebaseCollection: "devices_hls",
         logsCollection: "activityLogs_hls",
