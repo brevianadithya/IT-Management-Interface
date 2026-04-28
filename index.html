@@ -186,6 +186,7 @@
                                 <tr>
                                     <th class="tally-col">Checked</th>
                                     <th class="found-col">Found</th>
+                                    <th class="inventory-notes-col">Inventory Notes</th>
                                     <th>PC Number</th>
                                     <th>PC Model</th>
                                     <th>IP Address</th>
@@ -319,8 +320,13 @@
                             </div>
 
                             <div class="form-group">
+                                <label for="inventoryNotes"><i class="fas fa-sticky-note"></i> Inventory Notes</label>
+                                <textarea id="inventoryNotes" rows="2" placeholder="Notes for tallying/found status..." class="form-field" tabindex="10"></textarea>
+                            </div>
+
+                            <div class="form-group">
                                 <label for="status"><i class="fas fa-info-circle"></i> Device Status</label>
-                                <select id="status" class="form-field" tabindex="10">
+                                <select id="status" class="form-field" tabindex="11">
                                     <option value="active">Active</option>
                                     <option value="failed">Failed</option>
                                     <option value="replaced">Replaced</option>

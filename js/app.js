@@ -351,6 +351,7 @@ function exportToExcel(data, filename = 'devices') {
                 'Storage': device.storage || 'N/A',
                 'Monitors': monitorInfo,
                 'Software Licenses': softwareInfo,
+                'Inventory Notes': device.inventoryNotes || '',
                 'Status': device.status ? device.status.charAt(0).toUpperCase() + device.status.slice(1) : 'Active',
                 'Created By': device.createdBy || 'N/A',
                 'Created Date': device.createdAt ? (device.createdAt.toDate ? device.createdAt.toDate().toLocaleDateString() : device.createdAt) : 'N/A',
@@ -404,6 +405,7 @@ function downloadTemplate() {
                 'Storage': '512GB SSD',
                 'Monitors': 'Dell P2419H: MON123456',
                 'Software Licenses': 'Microsoft Office 2021: XXXXX-XXXXX-XXXXX-XXXXX-XXXXX',
+                'Inventory Notes': '',
                 'Status': 'Active',
                 'Created By': 'System',
                 'Created Date': new Date().toLocaleDateString(),
@@ -526,6 +528,7 @@ async function importFromExcel(file) {
                             networkInterfaces: [],
                             softwareLicenses: [],
                             monitors: [],
+                            inventoryNotes: (row['Inventory Notes'] || row['InventoryNotes'] || '').toString().trim(),
                             createdBy: currentUser,
                             site: currentSite.name
                         };
@@ -1799,6 +1802,9 @@ function loadFilteredTable(filteredData, title) {
                             <i class="${device.isFound ? 'fas fa-check-circle' : 'far fa-circle'}"></i>
                         </button>
                     </td>
+                    <td class="inventory-notes-col">
+                        <input type="text" class="inventory-notes-input" data-id="${device.id}" value="${device.inventoryNotes || ''}" placeholder="Add notes...">
+                    </td>
                     <td><strong>${device.pcNumber || 'N/A'}</strong></td>
                     <td>${getDeviceModel(device)}</td>
                     <td>${ipInfo}</td>
@@ -2007,6 +2013,9 @@ function loadInventoryTable() {
                             <i class="${device.isFound ? 'fas fa-check-circle' : 'far fa-circle'}"></i>
                         </button>
                     </td>
+                    <td class="inventory-notes-col">
+                        <input type="text" class="inventory-notes-input" data-id="${device.id}" value="${device.inventoryNotes || ''}" placeholder="Add notes...">
+                    </td>
                     <td><strong>${device.pcNumber || 'N/A'}</strong></td>
                     <td>${getDeviceModel(device)}</td>
                     <td>${ipInfo}</td>
@@ -2049,7 +2058,7 @@ function loadInventoryTable() {
 function attachRowClickListeners() {
     document.querySelectorAll('.device-row').forEach(row => {
         row.addEventListener('click', function (e) {
-            if (e.target.closest('button')) return;
+            if (e.target.closest('button') || e.target.closest('input') || e.target.closest('textarea')) return;
 
             const deviceId = this.getAttribute('data-id');
             showDeviceDetails(deviceId);
@@ -2217,6 +2226,39 @@ function attachActionButtonListeners() {
             toggleFound(deviceId);
         });
     });
+
+    document.querySelectorAll('.inventory-notes-input').forEach(input => {
+        input.addEventListener('click', function (e) {
+            e.stopPropagation();
+        });
+        input.addEventListener('change', function (e) {
+            const deviceId = this.getAttribute('data-id');
+            const notes = this.value.trim();
+            updateInventoryNotes(deviceId, notes);
+        });
+
+        // Also save on Enter key
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                this.blur();
+            }
+        });
+    });
+}
+
+async function updateInventoryNotes(deviceId, notes) {
+    const device = inventoryData.find(d => d.id === deviceId);
+    if (!device || !currentSite) return;
+
+    try {
+        await db.collection(currentSite.firebaseCollection).doc(deviceId).update({
+            inventoryNotes: notes,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        console.log(`📝 Updated inventory notes for ${device.pcNumber}`);
+    } catch (error) {
+        console.error("❌ Error updating inventory notes:", error);
+    }
 }
 
 async function toggleTally(deviceId) {
@@ -2285,6 +2327,10 @@ async function showDeviceDetails(deviceId) {
                         <div class="device-item">
                             <div class="device-label"><i class="fas fa-user-edit"></i> Added By:</div>
                             <div class="device-value">${device.createdBy || (currentSite && currentSite.name === 'WTC' ? 'Adithya' : 'N/A')}</div>
+                        </div>
+                        <div class="device-item">
+                            <div class="device-label"><i class="fas fa-sticky-note"></i> Inventory Notes:</div>
+                            <div class="device-value">${device.inventoryNotes || 'N/A'}</div>
                         </div>
                         <div class="device-item">
                             <div class="device-label"><i class="fas fa-info-circle"></i> Status:</div>
@@ -2717,6 +2763,7 @@ function editDevice(deviceId) {
     document.getElementById('pcSerial').value = device.pcSerial || '';
     document.getElementById('department').value = device.department || '';
     document.getElementById('userName').value = device.userName || '';
+    document.getElementById('inventoryNotes').value = device.inventoryNotes || '';
     document.getElementById('status').value = device.status || 'active';
     document.getElementById('cpu').value = device.cpu || '';
     document.getElementById('gpu').value = device.gpu || '';
@@ -2868,6 +2915,7 @@ deviceForm.addEventListener('submit', async function (e) {
         pcSerial: document.getElementById('pcSerial').value.trim(),
         department: document.getElementById('department').value,
         userName: document.getElementById('userName').value.trim(),
+        inventoryNotes: document.getElementById('inventoryNotes').value.trim(),
         status: document.getElementById('status').value,
         networkInterfaces: networkInterfaces,
         softwareLicenses: softwareLicenses,
@@ -3170,6 +3218,7 @@ function resetForm() {
     currentDeviceId = null;
     document.querySelector('#addDevice h2').innerHTML = '<i class="fas fa-plus-circle"></i> Add New Device';
     document.getElementById('department').value = '';
+    document.getElementById('inventoryNotes').value = '';
     document.getElementById('status').value = 'active';
     document.getElementById('cpu').value = '';
     document.getElementById('gpu').value = '';

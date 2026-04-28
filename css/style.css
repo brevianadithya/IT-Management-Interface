@@ -782,7 +782,8 @@
         }
 
         .hls-site .tally-col, 
-        .hls-site .found-col {
+        .hls-site .found-col,
+        .hls-site .inventory-notes-col {
             display: table-cell;
         }
 
@@ -798,6 +799,29 @@
             align-items: center;
             justify-content: center;
             margin: 0 auto;
+        }
+
+        .inventory-notes-col {
+            display: none;
+            width: 250px !important;
+            text-align: left !important;
+        }
+
+        .inventory-notes-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 13px;
+            background: rgba(255, 255, 255, 0.8);
+            transition: all 0.3s;
+        }
+
+        .inventory-notes-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            background: #fff;
+            box-shadow: 0 0 5px rgba(0, 49, 53, 0.1);
         }
 
         .tally-btn:hover, .found-btn:hover {
