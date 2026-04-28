@@ -1788,14 +1788,17 @@ function loadFilteredTable(filteredData, title) {
                     </div>
                 `;
 
-        const isHLS = currentSite && currentSite.name === 'HLS';
-        const tallyBtn = isHLS ? `
-                        <button class="btn btn-purple btn-sm tally-btn ${device.isTallied ? 'tallied' : ''}" data-id="${device.id}" title="Toggle Tally">
+        row.innerHTML = `
+                    <td class="tally-col">
+                        <button class="tally-btn ${device.isTallied ? 'tallied' : ''}" data-id="${device.id}" title="Mark as Checked">
                             <i class="${device.isTallied ? 'fas fa-check-square' : 'far fa-square'}"></i>
                         </button>
-                    ` : '';
-
-        row.innerHTML = `
+                    </td>
+                    <td class="found-col">
+                        <button class="found-btn ${device.isFound ? 'found' : ''}" data-id="${device.id}" title="Mark as Found">
+                            <i class="${device.isFound ? 'fas fa-check-circle' : 'far fa-circle'}"></i>
+                        </button>
+                    </td>
                     <td><strong>${device.pcNumber || 'N/A'}</strong></td>
                     <td>${getDeviceModel(device)}</td>
                     <td>${ipInfo}</td>
@@ -1804,7 +1807,6 @@ function loadFilteredTable(filteredData, title) {
                     <td>${device.createdBy || (currentSite && currentSite.name === 'WTC' ? 'Adithya' : 'N/A')}</td>
                     <td>${statusBadge}</td>
                     <td>
-                        ${tallyBtn}
                         <button class="btn btn-primary btn-sm view-btn" data-id="${device.id}" title="View Details">
                             <i class="fas fa-eye"></i>
                         </button>
@@ -1994,14 +1996,17 @@ function loadInventoryTable() {
                     </div>
                 `;
 
-        const isHLS = currentSite && currentSite.name === 'HLS';
-        const tallyBtn = isHLS ? `
-                        <button class="btn btn-purple btn-sm tally-btn ${device.isTallied ? 'tallied' : ''}" data-id="${device.id}" title="Toggle Tally">
+        row.innerHTML = `
+                    <td class="tally-col">
+                        <button class="tally-btn ${device.isTallied ? 'tallied' : ''}" data-id="${device.id}" title="Mark as Checked">
                             <i class="${device.isTallied ? 'fas fa-check-square' : 'far fa-square'}"></i>
                         </button>
-                    ` : '';
-
-        row.innerHTML = `
+                    </td>
+                    <td class="found-col">
+                        <button class="found-btn ${device.isFound ? 'found' : ''}" data-id="${device.id}" title="Mark as Found">
+                            <i class="${device.isFound ? 'fas fa-check-circle' : 'far fa-circle'}"></i>
+                        </button>
+                    </td>
                     <td><strong>${device.pcNumber || 'N/A'}</strong></td>
                     <td>${getDeviceModel(device)}</td>
                     <td>${ipInfo}</td>
@@ -2010,7 +2015,6 @@ function loadInventoryTable() {
                     <td>${device.createdBy || (currentSite && currentSite.name === 'WTC' ? 'Adithya' : 'N/A')}</td>
                     <td>${statusBadge}</td>
                     <td>
-                        ${tallyBtn}
                         <button class="btn btn-primary btn-sm view-btn" data-id="${device.id}" title="View Details">
                             <i class="fas fa-eye"></i>
                         </button>
@@ -2205,6 +2209,14 @@ function attachActionButtonListeners() {
             toggleTally(deviceId);
         });
     });
+
+    document.querySelectorAll('.found-btn').forEach(btn => {
+        btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            const deviceId = this.getAttribute('data-id');
+            toggleFound(deviceId);
+        });
+    });
 }
 
 async function toggleTally(deviceId) {
@@ -2217,9 +2229,23 @@ async function toggleTally(deviceId) {
             isTallied: newStatus,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
-        console.log(`✅ Toggled tally for ${device.pcNumber} to ${newStatus}`);
     } catch (error) {
         console.error("❌ Error toggling tally:", error);
+    }
+}
+
+async function toggleFound(deviceId) {
+    const device = inventoryData.find(d => d.id === deviceId);
+    if (!device || !currentSite) return;
+
+    try {
+        const newStatus = !device.isFound;
+        await db.collection(currentSite.firebaseCollection).doc(deviceId).update({
+            isFound: newStatus,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+    } catch (error) {
+        console.error("❌ Error toggling found:", error);
     }
 }
 

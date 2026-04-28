@@ -774,7 +774,19 @@
             font-size: 15px;
         }
 
-        .tally-btn {
+        /* Tally & Found Column Styles */
+        .tally-col, .found-col {
+            display: none;
+            width: 80px !important;
+            text-align: center !important;
+        }
+
+        .hls-site .tally-col, 
+        .hls-site .found-col {
+            display: table-cell;
+        }
+
+        .tally-btn, .found-btn {
             background: none;
             border: none;
             cursor: pointer;
@@ -788,13 +800,16 @@
             margin: 0 auto;
         }
 
-        .tally-btn:hover {
+        .tally-btn:hover, .found-btn:hover {
             transform: scale(1.2);
-            color: var(--primary-color);
         }
 
         .tally-btn.tallied {
             color: var(--success-color);
+        }
+
+        .found-btn.found {
+            color: var(--info-color);
         }
 
         /* Column Specifics */
