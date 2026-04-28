@@ -1258,11 +1258,14 @@ function selectSite(siteName, skipAnimation = false) {
 
     // Show/Hide Name List button for HLS site
     const nameListBtn = document.getElementById('nameListBtn');
+    const inventoryTable = document.getElementById('inventoryTable');
     if (nameListBtn) {
         if (currentSite.name === 'HLS') {
             nameListBtn.style.display = 'inline-flex';
+            if (inventoryTable) inventoryTable.classList.add('hls-site');
         } else {
             nameListBtn.style.display = 'none';
+            if (inventoryTable) inventoryTable.classList.remove('hls-site');
         }
     }
 
@@ -1785,6 +1788,13 @@ function loadFilteredTable(filteredData, title) {
                     </div>
                 `;
 
+        const isHLS = currentSite && currentSite.name === 'HLS';
+        const tallyBtn = isHLS ? `
+                        <button class="btn btn-purple btn-sm tally-btn ${device.isTallied ? 'tallied' : ''}" data-id="${device.id}" title="Toggle Tally">
+                            <i class="${device.isTallied ? 'fas fa-check-square' : 'far fa-square'}"></i>
+                        </button>
+                    ` : '';
+
         row.innerHTML = `
                     <td><strong>${device.pcNumber || 'N/A'}</strong></td>
                     <td>${getDeviceModel(device)}</td>
@@ -1794,6 +1804,7 @@ function loadFilteredTable(filteredData, title) {
                     <td>${device.createdBy || (currentSite && currentSite.name === 'WTC' ? 'Adithya' : 'N/A')}</td>
                     <td>${statusBadge}</td>
                     <td>
+                        ${tallyBtn}
                         <button class="btn btn-primary btn-sm view-btn" data-id="${device.id}" title="View Details">
                             <i class="fas fa-eye"></i>
                         </button>
@@ -1983,6 +1994,13 @@ function loadInventoryTable() {
                     </div>
                 `;
 
+        const isHLS = currentSite && currentSite.name === 'HLS';
+        const tallyBtn = isHLS ? `
+                        <button class="btn btn-purple btn-sm tally-btn ${device.isTallied ? 'tallied' : ''}" data-id="${device.id}" title="Toggle Tally">
+                            <i class="${device.isTallied ? 'fas fa-check-square' : 'far fa-square'}"></i>
+                        </button>
+                    ` : '';
+
         row.innerHTML = `
                     <td><strong>${device.pcNumber || 'N/A'}</strong></td>
                     <td>${getDeviceModel(device)}</td>
@@ -1992,6 +2010,7 @@ function loadInventoryTable() {
                     <td>${device.createdBy || (currentSite && currentSite.name === 'WTC' ? 'Adithya' : 'N/A')}</td>
                     <td>${statusBadge}</td>
                     <td>
+                        ${tallyBtn}
                         <button class="btn btn-primary btn-sm view-btn" data-id="${device.id}" title="View Details">
                             <i class="fas fa-eye"></i>
                         </button>
@@ -2178,6 +2197,30 @@ function attachActionButtonListeners() {
             showDeleteConfirmation(deviceId);
         });
     });
+
+    document.querySelectorAll('.tally-btn').forEach(btn => {
+        btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            const deviceId = this.getAttribute('data-id');
+            toggleTally(deviceId);
+        });
+    });
+}
+
+async function toggleTally(deviceId) {
+    const device = inventoryData.find(d => d.id === deviceId);
+    if (!device || !currentSite) return;
+
+    try {
+        const newStatus = !device.isTallied;
+        await db.collection(currentSite.firebaseCollection).doc(deviceId).update({
+            isTallied: newStatus,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        console.log(`✅ Toggled tally for ${device.pcNumber} to ${newStatus}`);
+    } catch (error) {
+        console.error("❌ Error toggling tally:", error);
+    }
 }
 
 // ============================================

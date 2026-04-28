@@ -774,6 +774,29 @@
             font-size: 15px;
         }
 
+        .tally-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 20px;
+            color: var(--text-gray);
+            transition: all 0.3s;
+            padding: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+        }
+
+        .tally-btn:hover {
+            transform: scale(1.2);
+            color: var(--primary-color);
+        }
+
+        .tally-btn.tallied {
+            color: var(--success-color);
+        }
+
         /* Column Specifics */
         .inventory-table th:nth-child(1),
         .inventory-table td:nth-child(1) {
