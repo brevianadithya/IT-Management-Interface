@@ -1033,6 +1033,50 @@
             background: var(--primary-dark);
         }
 
+        /* === IO DEVICES SECTION === */
+        .io-devices-container {
+            margin: 25px 0;
+            padding: 20px;
+            background: var(--secondary-light);
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+        }
+
+        .io-device-entry {
+            background: var(--primary-white);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .io-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .add-io-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 10px 0;
+        }
+
+        .add-io-btn:hover {
+            background: var(--primary-dark);
+        }
+
         /* === SOFTWARE LICENSES === */
         .software-licenses-container {
             margin: 25px 0;

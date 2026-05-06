@@ -338,6 +338,13 @@ function exportToExcel(data, filename = 'devices') {
                 ).join('; ');
             }
 
+            let ioInfo = 'N/A';
+            if (device.ioDevices && device.ioDevices.length > 0) {
+                ioInfo = device.ioDevices.map(io =>
+                    `${io.name || 'IO'}: ${io.model || 'N/A'} (${io.serial || 'N/A'})`
+                ).join('; ');
+            }
+
             return {
                 'Device Number': device.pcNumber || 'N/A',
                 'PC Model': device.pcModel || 'N/A',
@@ -350,6 +357,7 @@ function exportToExcel(data, filename = 'devices') {
                 'RAM': device.ram || 'N/A',
                 'Storage': device.storage || 'N/A',
                 'Monitors': monitorInfo,
+                'IO Devices': ioInfo,
                 'Software Licenses': softwareInfo,
                 'Inventory Notes': device.inventoryNotes || '',
                 'Status': device.status ? device.status.charAt(0).toUpperCase() + device.status.slice(1) : 'Active',
@@ -528,6 +536,7 @@ async function importFromExcel(file) {
                             networkInterfaces: [],
                             softwareLicenses: [],
                             monitors: [],
+                            ioDevices: [],
                             inventoryNotes: (row['Inventory Notes'] || row['InventoryNotes'] || '').toString().trim(),
                             createdBy: currentUser,
                             site: currentSite.name
@@ -579,6 +588,33 @@ async function importFromExcel(file) {
                                     deviceData.softwareLicenses.push({
                                         name: parts[0],
                                         licenseKey: parts[1]
+                                    });
+                                }
+                            });
+                        }
+
+                        // Parse IO devices
+                        if (row['IO Devices'] || row['IODevices']) {
+                            const ioPairs = String(row['IO Devices'] || row['IODevices'] || '').split(';').map(pair => pair.trim());
+                            ioPairs.forEach(pair => {
+                                // Format: Name: Model (Serial)
+                                const nameParts = pair.split(':').map(p => p.trim());
+                                if (nameParts.length >= 2) {
+                                    const name = nameParts[0];
+                                    const modelSerialPart = nameParts[1];
+                                    
+                                    let model = modelSerialPart;
+                                    let serial = 'N/A';
+                                    
+                                    if (modelSerialPart.includes('(') && modelSerialPart.includes(')')) {
+                                        model = modelSerialPart.split('(')[0].trim();
+                                        serial = modelSerialPart.split('(')[1].split(')')[0].trim();
+                                    }
+                                    
+                                    deviceData.ioDevices.push({
+                                        name: name,
+                                        model: model,
+                                        serial: serial
                                     });
                                 }
                             });
@@ -895,6 +931,90 @@ function collectNetworkInterfacesData() {
 }
 
 // ============================================
+// IO DEVICE MANAGEMENT
+// ============================================
+function createIODeviceElement(ioData = null, index = 0) {
+    const ioId = ioData?.id || `io-${Date.now()}-${index}`;
+
+    const div = document.createElement('div');
+    div.className = 'io-device-entry';
+
+    div.innerHTML = `
+                <div class="io-header">
+                    <h4><i class="fas fa-microchip"></i> IO Device ${index + 1}</h4>
+                    <button type="button" class="remove-io-btn" onclick="removeIODevice('${ioId}')" 
+                            style="background: none; border: none; color: var(--danger-color); cursor: pointer; display: flex; align-items: center; gap: 5px; font-size: 14px;">
+                        <i class="fas fa-times"></i> Remove
+                    </button>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label><i class="fas fa-tag"></i> IO Device Name *</label>
+                        <input type="text" class="io-name form-field" value="${ioData?.name || ''}" 
+                               placeholder="e.g., Blackmagic DeckLink" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label><i class="fas fa-laptop"></i> IO Model *</label>
+                        <input type="text" class="io-model form-field" value="${ioData?.model || ''}" 
+                               placeholder="e.g., Quad HDMI Recorder" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label><i class="fas fa-barcode"></i> IO Serial *</label>
+                        <input type="text" class="io-serial form-field" value="${ioData?.serial || ''}" 
+                               placeholder="e.g., SN123456789" required>
+                    </div>
+                </div>
+                <input type="hidden" class="io-id" value="${ioId}">
+            `;
+
+    return div;
+}
+
+function removeIODevice(ioId) {
+    const ioDiv = document.querySelector(`.io-device-entry input.io-id[value="${ioId}"]`)?.closest('.io-device-entry');
+    if (ioDiv) {
+        ioDiv.remove();
+        updateAllIOTitles();
+    }
+}
+
+function updateAllIOTitles() {
+    document.querySelectorAll('.io-device-entry').forEach((ioDiv, index) => {
+        const header = ioDiv.querySelector('.io-header h4');
+        header.innerHTML = `<i class="fas fa-microchip"></i> IO Device ${index + 1}`;
+    });
+}
+
+function collectIODevicesData() {
+    const ioDevices = [];
+    document.querySelectorAll('.io-device-entry').forEach(ioDiv => {
+        const ioData = {
+            id: ioDiv.querySelector('.io-id').value,
+            name: ioDiv.querySelector('.io-name').value,
+            model: ioDiv.querySelector('.io-model').value,
+            serial: ioDiv.querySelector('.io-serial').value
+        };
+
+        if (ioData.name && ioData.model && ioData.serial) {
+            ioDevices.push(ioData);
+        }
+    });
+    return ioDevices;
+}
+
+function addDefaultIODevice() {
+    if (ioDevicesList) {
+        ioDevicesList.innerHTML = '';
+        const defaultIO = createIODeviceElement(null, 0);
+        ioDevicesList.appendChild(defaultIO);
+    }
+}
+
+// ============================================
 // GET DEVICE MODEL AND SERIAL FUNCTIONS
 // ============================================
 function getDeviceModel(device) {
@@ -991,6 +1111,11 @@ const addMonitorBtn = document.getElementById('addMonitorBtn');
 // Software licenses
 const softwareLicensesList = document.getElementById('softwareLicensesList');
 const addSoftwareLicenseBtn = document.getElementById('addSoftwareLicenseBtn');
+
+// IO devices
+const ioDevicesContainer = document.getElementById('ioDevicesContainer');
+const ioDevicesList = document.getElementById('ioDevicesList');
+const addIODeviceBtn = document.getElementById('addIODeviceBtn');
 
 // Failed devices elements
 const failedDevicesTableBody = document.getElementById('failedDevicesTableBody');
@@ -1266,9 +1391,11 @@ function selectSite(siteName, skipAnimation = false) {
         if (currentSite.name === 'HLS') {
             nameListBtn.style.display = 'inline-flex';
             if (inventoryTable) inventoryTable.classList.add('hls-site');
+            if (ioDevicesContainer) ioDevicesContainer.style.display = 'block';
         } else {
             nameListBtn.style.display = 'none';
             if (inventoryTable) inventoryTable.classList.remove('hls-site');
+            if (ioDevicesContainer) ioDevicesContainer.style.display = 'none';
         }
     }
 
@@ -1292,6 +1419,7 @@ function selectSite(siteName, skipAnimation = false) {
         addDefaultNetworkInterface();
         addDefaultMonitor();
         addDefaultSoftwareLicense();
+        if (currentSite.name === 'HLS') addDefaultIODevice();
 
         setupEnterKeyNavigation();
         return;
@@ -2447,6 +2575,31 @@ async function showDeviceDetails(deviceId) {
                         </div>
                     </div>
                     ` : ''}
+                    
+                    ${device.ioDevices && device.ioDevices.length > 0 ? `
+                    <div class="device-section">
+                        <h3><i class="fas fa-microchip"></i> IO Devices</h3>
+                        <div class="monitors-grid"> <!-- Reusing monitors-grid for similar layout -->
+                            ${device.ioDevices.map((io, index) => `
+                                <div class="monitor-card">
+                                    <h4><i class="fas fa-microchip"></i> IO Device ${index + 1}</h4>
+                                    <div class="monitor-detail">
+                                        <span class="monitor-label">Name:</span>
+                                        <span class="monitor-value">${io.name || 'N/A'}</span>
+                                    </div>
+                                    <div class="monitor-detail">
+                                        <span class="monitor-label">Model:</span>
+                                        <span class="monitor-value">${io.model || 'N/A'}</span>
+                                    </div>
+                                    <div class="monitor-detail">
+                                        <span class="monitor-label">Serial:</span>
+                                        <span class="monitor-value">${io.serial || 'N/A'}</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
                 </div>
                 
                 ${(device.cpu || device.ram || device.storage) ? `
@@ -2803,6 +2956,18 @@ function editDevice(deviceId) {
         monitorsList.appendChild(defaultMonitor);
     }
 
+    if (currentSite.name === 'HLS' && ioDevicesList) {
+        ioDevicesList.innerHTML = '';
+        if (device.ioDevices && device.ioDevices.length > 0) {
+            device.ioDevices.forEach((io, index) => {
+                const ioElement = createIODeviceElement(io, index);
+                ioDevicesList.appendChild(ioElement);
+            });
+        } else {
+            addDefaultIODevice();
+        }
+    }
+
     softwareLicensesList.innerHTML = '';
     if (device.softwareLicenses && device.softwareLicenses.length > 0) {
         device.softwareLicenses.forEach((software, index) => {
@@ -2908,6 +3073,7 @@ deviceForm.addEventListener('submit', async function (e) {
     const networkInterfaces = collectNetworkInterfacesData();
     const softwareLicenses = collectSoftwareLicensesData();
     const monitors = collectMonitorsData();
+    const ioDevices = currentSite.name === 'HLS' ? collectIODevicesData() : [];
 
     const deviceData = {
         pcNumber: document.getElementById('pcNumber').value.trim(),
@@ -2920,6 +3086,7 @@ deviceForm.addEventListener('submit', async function (e) {
         networkInterfaces: networkInterfaces,
         softwareLicenses: softwareLicenses,
         monitors: monitors,
+        ioDevices: ioDevices,
         site: currentSite.name
     };
 
@@ -3227,6 +3394,7 @@ function resetForm() {
     addDefaultNetworkInterface();
     addDefaultMonitor();
     addDefaultSoftwareLicense();
+    if (currentSite && currentSite.name === 'HLS') addDefaultIODevice();
 }
 
 // ============================================
@@ -3365,6 +3533,14 @@ addSoftwareLicenseBtn.addEventListener('click', function () {
     softwareLicensesList.appendChild(newSoftware);
 
     newSoftware.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+});
+
+addIODeviceBtn.addEventListener('click', function () {
+    const ioCount = document.querySelectorAll('.io-device-entry').length;
+    const newIO = createIODeviceElement(null, ioCount);
+    ioDevicesList.appendChild(newIO);
+
+    newIO.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 });
 
 // ============================================
